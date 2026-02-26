@@ -17,12 +17,20 @@ Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Fixed a performance issue with thread-MPI
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"""""""""""""""""""""""""""""""""""""""""
 
 Way too many OpenMP threads (up to approximately (number_of_cpu_cores)^2) could be created,
 severely impacting performance.
 
 :issue:`5564`
+
+Fix segfault on exit when running NNP inference with CUDA
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When running a simulation with the NNPot interface and performing inference on a CUDA device,
+a segfault would occur on program exit. This did not affect results, but should not happen.
+
+:issue:`5568`
 
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
