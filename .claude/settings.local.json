@@ -14,7 +14,12 @@
       "mcp__plugin_serena_serena__search_for_pattern",
       "mcp__plugin_serena_serena__find_symbol",
       "Bash(xargs grep:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(pandoc:*)",
+      "Bash(python:*)",
+      "Bash(sort:*)",
+      "Bash(echo:*)",
+      "Bash(python3:*)"
     ]
   }
 }

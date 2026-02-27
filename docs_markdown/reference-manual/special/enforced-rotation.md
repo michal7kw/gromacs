@@ -1,0 +1,745 @@
+# Enforced Rotation
+
+This module can be used to enforce the rotation of a group of atoms, as
+*e.g.* a protein subunit. There are a variety of rotation potentials,
+among them complex ones that allow flexible adaptations of both the
+rotated subunit as well as the local rotation axis during the
+simulation. An example application can be found in ref.
+`145 <refKutzner2011>`.
+
+![plots/rotation.*](plots/rotation.*)
+
+*Comparison of fixed and flexible axis rotation. A: Rotating the sketched shape inside the white tubular cavity can create artifacts when a fixed rotation axis (dashed) is used. More realistically, the shape would revolve like a flexible pipe-cleaner (dotted) inside the bearing (gray). B: Fixed rotation around an axis $v$ with a pivot point specified by the vector $u$. C: Subdividing the rotating fragment into slabs with separate rotation axes ($↑$) and pivot points ($•$) for each slab allows for flexibility. The distance between two slabs with indices $n$ and $n + 1$ is $Δx$.*
+
+![plots/equipotential.*](plots/equipotential.*)
+
+*Selection of different rotation potentials and definition of notation. All four potentials $V$ (color coded) are shown for a single atom at position $xj(t)$. A: Isotropic potential $Viso$, B: radial motion potential $Vrm$ and flexible potential $Vflex$, C–D: radial motion2 potential $Vrm2$ and flexible2 potential $Vflex2$ for $ϵ′=0nm2$ (C) and $ϵ′=0.01nm2$ (D). The rotation axis is perpendicular to the plane and marked by $⊗$. The light gray contours indicate Boltzmann factors $e−V/(kBT)$ in the $xj$-plane for $T = 300$K and $k=200kJ/(mol ⋅ nm2)$. The green arrow shows the direction of the force $F j$ acting on atom $j$; the blue dashed line indicates the motion of the reference position.*
+
+## Fixed Axis Rotation
+
+### Stationary Axis with an Isotropic Potential
+
+In the fixed axis approach (see `Fig. %s B <fig-rotation>`), torque on a
+group of $N$ atoms with positions $\mathbf{x}_i$ (denoted “rotation
+group”) is applied by rotating a reference set of atomic positions –
+usually their initial positions $\mathbf{y}_i^0$ – at a constant
+angular velocity $\omega$ around an axis defined by a direction vector
+$\hat{\mathbf{v}}$ and a pivot point $\mathbf{u}$. To that aim, each
+atom with position $\mathbf{x}_i$ is attracted by a “virtual spring”
+potential to its moving reference position
+$\mathbf{y}_i = \mathbf{\Omega}(t) (\mathbf{y}_i^0 - \mathbf{u})$,
+where $\mathbf{\Omega}(t)$ is a matrix that describes the rotation
+around the axis. In the simplest case, the “springs” are described by a
+harmonic potential,
+
+$$
+V^\mathrm{iso} = \frac{k}{2} \sum_{i=1}^{N} w_i \left[ \mathbf{\Omega}(t)
+(\mathbf{y}_i^0 - \mathbf{u}) - (\mathbf{x}_i - \mathbf{u})  \right]^2
+$$
+
+with optional mass-weighted prefactors $w_i = N \, m_i/M$ with total
+mass $M = \sum_{i=1}^N m_i$. The rotation matrix
+$\mathbf{\Omega}(t)$ is
+
+$$
+\begin{aligned}
+\mathbf{\Omega}(t) =
+\left(
+\begin{array}{ccc}
+\cos\omega t + v_x^2{\,\xi\,}& v_x v_y{\,\xi\,}- v_z\sin\omega t  & v_x v_z{\,\xi\,}+ v_y\sin\omega t\\
+v_x v_y{\,\xi\,}+ v_z\sin\omega t  & \cos\omega t + v_y^2{\,\xi\,}& v_y v_z{\,\xi\,}- v_x\sin\omega t\\
+v_x v_z{\,\xi\,}- v_y\sin\omega t  & v_y v_z{\,\xi\,}+ v_x\sin\omega t  & \cos\omega t + v_z^2{\,\xi\,}\\
+\end{array}
+\right)
+\end{aligned}
+$$
+
+where $v_x$, $v_y$, and $v_z$ are the components of the normalized
+rotation vector $\hat{\mathbf{v}}$, and
+${\,\xi\,}:= 1-\cos(\omega t)$. As illustrated in
+`Fig.  %s A <fig-equipotential>` for a single atom $j$, the rotation
+matrix $\mathbf{\Omega}(t)$ operates on the initial reference
+positions $\mathbf{y}_j^0 = \mathbf{x}_j(t_0)$ of atom $j$ at
+$t=t_0$. At a later time $t$, the reference position has rotated
+away from its initial place (along the blue dashed line), resulting in
+the force
+
+$$
+\mathbf{F}_{\!j}^\mathrm{iso}
+= -\nabla_{\!j} \, V^\mathrm{iso}
+= k \, w_j \left[
+\mathbf{\Omega}(t) (\mathbf{y}_j^0 - \mathbf{u}) - (\mathbf{x}_j - \mathbf{u} ) \right]
+$$
+
+which is directed towards the reference position.
+
+## Pivot-Free Isotropic Potential
+
+Instead of a fixed pivot vector $\mathbf{u}$ this potential uses the
+center of mass $\mathbf{x}_c$ of the rotation group as pivot for the
+rotation axis,
+
+$$
+\mathbf{x}_c   = \frac{1}{M} \sum_{i=1}^N m_i \mathbf{x}_i
+\mbox{and}
+\mathbf{y}_c^0 = \frac{1}{M} \sum_{i=1}^N m_i \mathbf{y}_i^0 \ ,
+$$
+
+which yields the “pivot-free” isotropic potential
+
+$$
+V^\mathrm{iso-pf} = \frac{k}{2} \sum_{i=1}^{N} w_i \left[ \mathbf{\Omega}(t)
+(\mathbf{y}_i^0 - \mathbf{y}_c^0) - (\mathbf{x}_i - \mathbf{x}_c) \right]^2 ,
+$$
+
+with forces
+
+$$
+\mathbf{F}_{\!j}^\mathrm{iso-pf} = k \, w_j
+\left[
+\mathbf{\Omega}(t) ( \mathbf{y}_j^0 - \mathbf{y}_c^0)
+- ( \mathbf{x}_j   - \mathbf{x}_c )
+\right] .
+$$
+
+Without mass-weighting, the pivot $\mathbf{x}_c$ is the geometrical
+center of the group.
+
+## Parallel Motion Potential Variant
+
+The forces generated by the isotropic potentials (eqns. `%s <eqnpotiso>`
+and `%s <eqnpotisopf>`) also contain components parallel to the rotation
+axis and thereby restrain motions along the axis of either the whole
+rotation group (in case of $V^\mathrm{iso}$) or within the rotation
+group, in case of $V^\mathrm{iso-pf}$.
+
+For cases where unrestrained motion along the axis is preferred, we have
+implemented a “parallel motion” variant by eliminating all components
+parallel to the rotation axis for the potential. This is achieved by
+projecting the distance vectors between reference and actual positions
+
+$$
+\mathbf{r}_i = \mathbf{\Omega}(t) (\mathbf{y}_i^0 - \mathbf{u}) - (\mathbf{x}_i - \mathbf{u})
+$$
+
+onto the plane perpendicular to the rotation vector,
+
+$$
+\mathbf{r}_i^\perp :=  \mathbf{r}_i - (\mathbf{r}_i \cdot \hat{\mathbf{v}})\hat{\mathbf{v}}
+$$
+
+yielding
+
+$$
+\begin{aligned}
+\begin{aligned}
+\nonumber
+V^\mathrm{pm} &=& \frac{k}{2} \sum_{i=1}^{N} w_i ( \mathbf{r}_i^\perp )^2 \\
+&=& \frac{k}{2} \sum_{i=1}^{N} w_i
+\left\lbrace
+\mathbf{\Omega}(t)
+(\mathbf{y}_i^0 - \mathbf{u}) - (\mathbf{x}_i - \mathbf{u})  \right. \nonumber \\
+&& \left. - \left\lbrace
+\left[ \mathbf{\Omega}(t)(\mathbf{y}_i^0 - \mathbf{u}) - (\mathbf{x}_i - \mathbf{u}) \right] \cdot\hat{\mathbf{v}}
+\right\rbrace\hat{\mathbf{v}} \right\rbrace^2
+\end{aligned}
+\end{aligned}
+$$
+
+and similarly
+
+$$
+\mathbf{F}_{\!j}^\mathrm{pm} = k \, w_j \, \mathbf{r}_j^\perp
+$$
+
+## Pivot-Free Parallel Motion Potential
+
+Replacing in eqn. `%s <eqnpotpm>` the fixed pivot $\mathbf{u}$ by the
+center of mass $\mathbf{x_c}$ yields the pivot-free variant of the
+parallel motion potential. With
+
+$$
+\mathbf{s}_i = \mathbf{\Omega}(t) (\mathbf{y}_i^0 - \mathbf{y}_c^0) - (\mathbf{x}_i - \mathbf{x}_c)
+$$
+
+the respective potential and forces are
+
+$$
+\begin{aligned}
+V^\mathrm{pm-pf} &=& \frac{k}{2} \sum_{i=1}^{N} w_i ( \mathbf{s}_i^\perp )^2 \end{aligned}
+$$
+
+$$
+\begin{aligned}
+\mathbf{F}_{\!j}^\mathrm{pm-pf} &=& k \, w_j \, \mathbf{s}_j^\perp
+\end{aligned}
+$$
+
+## Radial Motion Potential
+
+In the above variants, the minimum of the rotation potential is either a
+single point at the reference position $\mathbf{y}_i$ (for the
+isotropic potentials) or a single line through $\mathbf{y}_i$ parallel
+to the rotation axis (for the parallel motion potentials). As a result,
+radial forces restrict radial motions of the atoms. The two subsequent
+types of rotation potentials, $V^\mathrm{rm}$ and $V^\mathrm{rm2}$,
+drastically reduce or even eliminate this effect. The first variant,
+$V^\mathrm{rm}$ (`Fig. %s B <fig-equipotential>`), eliminates all
+force components parallel to the vector connecting the reference atom
+and the rotation axis,
+
+$$
+V^\mathrm{rm} = \frac{k}{2} \sum_{i=1}^{N} w_i \left[
+\mathbf{p}_i
+\cdot(\mathbf{x}_i - \mathbf{u}) \right]^2 ,
+$$
+
+with
+
+$$
+\mathbf{p}_i :=
+\frac{\hat{\mathbf{v}}\times \mathbf{\Omega}(t) (\mathbf{y}_i^0 - \mathbf{u})} {\| \hat{\mathbf{v}}\times \mathbf{\Omega}(t) (\mathbf{y}_i^0 - \mathbf{u})\|} \ .
+$$
+
+This variant depends only on the distance
+$\mathbf{p}_i \cdot (\mathbf{x}_i -
+\mathbf{u})$ of atom $i$ from the plane spanned by
+$\hat{\mathbf{v}}$ and
+$\mathbf{\Omega}(t)(\mathbf{y}_i^0 - \mathbf{u})$. The resulting force
+is
+
+$$
+\mathbf{F}_{\!j}^\mathrm{rm} =
+-k \, w_j \left[ \mathbf{p}_j\cdot(\mathbf{x}_j - \mathbf{u}) \right] \,\mathbf{p}_j \,  .
+$$
+
+## Pivot-Free Radial Motion Potential
+
+Proceeding similar to the pivot-free isotropic potential yields a
+pivot-free version of the above potential. With
+
+$$
+\mathbf{q}_i :=
+\frac{\hat{\mathbf{v}}\times \mathbf{\Omega}(t) (\mathbf{y}_i^0 - \mathbf{y}_c^0)} {\| \hat{\mathbf{v}}\times \mathbf{\Omega}(t) (\mathbf{y}_i^0 - \mathbf{y}_c^0)\|} \, ,
+$$
+
+the potential and force for the pivot-free variant of the radial motion
+potential read
+
+$$
+\begin{aligned}
+V^\mathrm{rm-pf} & = & \frac{k}{2} \sum_{i=1}^{N} w_i \left[
+\mathbf{q}_i
+\cdot(\mathbf{x}_i - \mathbf{x}_c)
+\right]^2 \, , \end{aligned}
+$$
+
+$$
+\begin{aligned}
+\mathbf{F}_{\!j}^\mathrm{rm-pf} & = &
+-k \, w_j \left[ \mathbf{q}_j\cdot(\mathbf{x}_j - \mathbf{x}_c) \right] \,\mathbf{q}_j
++ k   \frac{m_j}{M} \sum_{i=1}^{N} w_i \left[
+\mathbf{q}_i\cdot(\mathbf{x}_i - \mathbf{x}_c) \right]\,\mathbf{q}_i \, .
+\end{aligned}
+$$
+
+## Radial Motion 2 Alternative Potential
+
+As seen in `Fig. %s B <fig-equipotential>`, the force resulting from
+$V^\mathrm{rm}$ still contains a small, second-order radial component.
+In most cases, this perturbation is tolerable; if not, the following
+alternative, $V^\mathrm{rm2}$, fully eliminates the radial
+contribution to the force, as depicted in
+`Fig. %s C <fig-equipotential>`,
+
+$$
+V^\mathrm{rm2} =
+\frac{k}{2} \sum_{i=1}^{N} w_i\,
+\frac{\left[ (\hat{\mathbf{v}} \times ( \mathbf{x}_i - \mathbf{u} ))
+\cdot \mathbf{\Omega}(t)(\mathbf{y}_i^0 - \mathbf{u}) \right]^2}
+{\| \hat{\mathbf{v}} \times (\mathbf{x}_i - \mathbf{u}) \|^2 +
+\epsilon'} \, ,
+$$
+
+where a small parameter $\epsilon'$ has been introduced to avoid
+singularities. For $\epsilon'\mathrm{ = }0\mathrm{nm}^2$, the
+equipotential planes are spanned by $\mathbf{x}_i -
+\mathbf{u}$ and $\hat{\mathbf{v}}$, yielding a force perpendicular to
+$\mathbf{x}_i - \mathbf{u}$, thus not contracting or expanding
+structural parts that moved away from or toward the rotation axis.
+
+Choosing a small positive $\epsilon'$ (*e.g.*,
+$\epsilon'\mathrm{ = }0.01\mathrm{nm}^2$,
+`Fig. %s D <fig-equipotential>`) in the denominator of eqn.
+`%s <eqnpotrm2>` yields a well-defined potential and continuous forces
+also close to the rotation axis, which is not the case for
+$\epsilon'\mathrm{ = }0\mathrm{nm}^2$
+(`Fig. %s C <fig-equipotential>`). With
+
+$$
+\begin{aligned}
+\begin{aligned}
+\mathbf{r}_i & := & \mathbf{\Omega}(t)(\mathbf{y}_i^0 - \mathbf{u})\\
+\mathbf{s}_i & := & \frac{\hat{\mathbf{v}} \times (\mathbf{x}_i -
+\mathbf{u} ) }{ \| \hat{\mathbf{v}} \times (\mathbf{x}_i - \mathbf{u})
+\| } \equiv \; \Psi_{i} \;\; {\hat{\mathbf{v}} \times
+(\mathbf{x}_i-\mathbf{u} ) }\\
+\Psi_i^{*}   & := & \frac{1}{ \| \hat{\mathbf{v}} \times
+(\mathbf{x}_i-\mathbf{u}) \|^2 + \epsilon'}\end{aligned}
+\end{aligned}
+$$
+
+the force on atom $j$ reads
+
+$$
+\mathbf{F}_{\!j}^\mathrm{rm2}  =
+- k\;
+\left\lbrace w_j\;
+(\mathbf{s}_j\cdot\mathbf{r}_{\!j})\;
+\left[ \frac{\Psi_{\!j}^*   }{\Psi_{\!j}  }  \mathbf{r}_{\!j}
+- \frac{\Psi_{\!j}^{ * 2}}{\Psi_{\!j}^3}
+(\mathbf{s}_j\cdot\mathbf{r}_{\!j})\mathbf{s}_j \right]
+\right\rbrace \times \hat{\mathbf{v}} .
+$$
+
+## Pivot-Free Radial Motion 2 Potential
+
+The pivot-free variant of the above potential is
+
+$$
+V{^\mathrm{rm2-pf}}=
+\frac{k}{2} \sum_{i=1}^{N} w_i\,
+\frac{\left[ (\hat{\mathbf{v}} \times ( \mathbf{x}_i - \mathbf{x}_c ))
+\cdot \mathbf{\Omega}(t)(\mathbf{y}_i^0 - \mathbf{y}_c) \right]^2}
+{\| \hat{\mathbf{v}} \times (\mathbf{x}_i - \mathbf{x}_c) \|^2 +
+\epsilon'} \, .
+$$
+
+With
+
+$$
+\begin{aligned}
+\begin{aligned}
+\mathbf{r}_i & := & \mathbf{\Omega}(t)(\mathbf{y}_i^0 - \mathbf{y}_c)\\
+\mathbf{s}_i & := & \frac{\hat{\mathbf{v}} \times (\mathbf{x}_i -
+\mathbf{x}_c ) }{ \| \hat{\mathbf{v}} \times (\mathbf{x}_i - \mathbf{x}_c)
+\| } \equiv \; \Psi_{i} \;\; {\hat{\mathbf{v}} \times
+(\mathbf{x}_i-\mathbf{x}_c ) }\\ \Psi_i^{*}   & := & \frac{1}{ \| \hat{\mathbf{v}} \times
+(\mathbf{x}_i-\mathbf{x}_c) \|^2 + \epsilon'}\end{aligned}
+\end{aligned}
+$$
+
+the force on atom $j$ reads
+
+$$
+\begin{aligned}
+\begin{aligned}
+\nonumber
+\mathbf{F}_{\!j}{^\mathrm{rm2-pf}}& = &
+- k\;
+\left\lbrace w_j\;
+(\mathbf{s}_j\cdot\mathbf{r}_{\!j})\;
+\left[ \frac{\Psi_{\!j}^*   }{\Psi_{\!j}  } \mathbf{r}_{\!j}
+- \frac{\Psi_{\!j}^{ * 2}}{\Psi_{\!j}^3}
+(\mathbf{s}_j\cdot\mathbf{r}_{\!j})\mathbf{s}_j \right]
+\right\rbrace \times \hat{\mathbf{v}}\\
+& &
++ k\;\frac{m_j}{M} \left\lbrace \sum_{i=1}^{N}
+w_i\;(\mathbf{s}_i\cdot\mathbf{r}_i) \;
+\left[ \frac{\Psi_i^*   }{\Psi_i  }  \mathbf{r}_i
+- \frac{\Psi_i^{ * 2}}{\Psi_i^3} (\mathbf{s}_i\cdot\mathbf{r}_i )\;
+\mathbf{s}_i \right] \right\rbrace \times \hat{\mathbf{v}} \, .
+\end{aligned}
+\end{aligned}
+$$
+
+### Flexible Axis Rotation
+
+As sketched in `Fig. %s <fig-rotation>` A–B, the rigid body behavior of
+the fixed axis rotation scheme is a drawback for many applications. In
+particular, deformations of the rotation group are suppressed when the
+equilibrium atom positions directly depend on the reference positions.
+To avoid this limitation, eqns. `%s <eqnpotrmpf>` and `%s <eqnpotrm2pf>`
+will now be generalized towards a “flexible axis” as sketched in
+`Fig. %s C <fig-rotation>`. This will be achieved by subdividing the
+rotation group into a set of equidistant slabs perpendicular to the
+rotation vector, and by applying a separate rotation potential to each
+of these slabs. `Fig. %s C <fig-rotation>` shows the midplanes of the
+slabs as dotted straight lines and the centers as thick black dots.
+
+To avoid discontinuities in the potential and in the forces, we define
+“soft slabs” by weighing the contributions of each slab $n$ to the
+total potential function $V^\mathrm{flex}$ by a Gaussian function
+
+$$
+g_n(\mathbf{x}_i) = \Gamma \ \mbox{exp} \left(
+-\frac{\beta_n^2(\mathbf{x}_i)}{2\sigma^2}  \right) ,
+$$
+
+centered at the midplane of the $n$th slab. Here $\sigma$ is the
+width of the Gaussian function, $\Delta x$ the distance between
+adjacent slabs, and
+
+$$
+\beta_n(\mathbf{x}_i) := \mathbf{x}_i \cdot \hat{\mathbf{v}} - n \, \Delta x \, .
+$$
+
+![plots/gaussians.*](plots/gaussians.*)
+
+*Gaussian functions $gn$ centered at $n Δx$ for a slab distance $Δx = 1.5$ nm and $n ≥ −2$. Gaussian function $g0$ is highlighted in bold; the dashed line depicts the sum of the shown Gaussian functions.*
+
+A most convenient choice is $\sigma = 0.7 \Delta x$ and
+
+$$
+1/\Gamma = \sum_{n \in Z}
+\mbox{exp}
+\left(-\frac{(n - \frac{1}{4})^2}{2\cdot 0.7^2}\right)
+\approx 1.75464 \, ,
+$$
+
+which yields a nearly constant sum, essentially independent of
+$\mathbf{x}_i$ (dashed line in `Fig. %s <fig-gaussian>`), *i.e.*,
+
+$$
+\sum_{n \in Z} g_n(\mathbf{x}_i) =  1 + \epsilon(\mathbf{x}_i) \, ,
+$$
+
+with $| \epsilon(\mathbf{x}_i) | < 1.3\cdot 10^{-4}$. This choice also
+implies that the individual contributions to the force from the slabs
+add up to unity such that no further normalization is required.
+
+To each slab center $\mathbf{x}_c^n$, all atoms contribute by their
+Gaussian-weighted (optionally also mass-weighted) position vectors
+$g_n(\mathbf{x}_i) \, \mathbf{x}_i$. The instantaneous slab centers
+$\mathbf{x}_c^n$ are calculated from the current positions
+$\mathbf{x}_i$,
+
+$$
+\begin{aligned}
+\mathbf{x}_c^n =
+\frac{\sum_{i=1}^N g_n(\mathbf{x}_i) \, m_i \, \mathbf{x}_i}
+{\sum_{i=1}^N g_n(\mathbf{x}_i) \, m_i} \, ,\\
+\end{aligned}
+$$
+
+while the reference centers $\mathbf{y}_c^n$ are calculated from the
+reference positions $\mathbf{y}_i^0$,
+
+$$
+\mathbf{y}_c^n =
+\frac{\sum_{i=1}^N g_n(\mathbf{y}_i^0) \, m_i \, \mathbf{y}_i^0}
+{\sum_{i=1}^N g_n(\mathbf{y}_i^0) \, m_i} \, .
+$$
+
+Due to the rapid decay of $g_n$, each slab will essentially involve
+contributions from atoms located within $\approx
+3\Delta x$ from the slab center only.
+
+## Flexible Axis Potential
+
+We consider two flexible axis variants. For the first variant, the slab
+segmentation procedure with Gaussian weighting is applied to the radial
+motion potential (eqn. `%s <eqnpotrmpf>` /
+`Fig. %s B <fig-equipotential>`), yielding as the contribution of slab
+$n$
+
+$$
+V^n =
+\frac{k}{2} \sum_{i=1}^{N} w_i \, g_n(\mathbf{x}_i)
+\left[
+\mathbf{q}_i^n
+\cdot
+(\mathbf{x}_i - \mathbf{x}_c^n)
+\right]^2  ,
+$$
+
+and a total potential function
+
+$$
+V^\mathrm{flex} = \sum_n V^n \, .
+$$
+
+Note that the global center of mass $\mathbf{x}_c$ used in eqn.
+`%s <eqnpotrmpf>` is now replaced by $\mathbf{x}_c^n$, the center of
+mass of the slab. With
+
+$$
+\begin{aligned}
+\begin{aligned}
+\mathbf{q}_i^n & := & \frac{\hat{\mathbf{v}} \times
+\mathbf{\Omega}(t)(\mathbf{y}_i^0 - \mathbf{y}_c^n) }{ \| \hat{\mathbf{v}}
+\times \mathbf{\Omega}(t)(\mathbf{y}_i^0 - \mathbf{y}_c^n) \| } \\
+b_i^n         & := & \mathbf{q}_i^n \cdot (\mathbf{x}_i - \mathbf{x}_c^n) \, ,\end{aligned}
+\end{aligned}
+$$
+
+the resulting force on atom $j$ reads
+
+$$
+\begin{aligned}
+\begin{aligned}
+\nonumber\hspace{-15mm}
+\mathbf{F}_{\!j}^\mathrm{flex} &=&
+- \, k \, w_j \sum_n g_n(\mathbf{x}_j) \, b_j^n \left\lbrace  \mathbf{q}_j^n -
+b_j^n \frac{\beta_n(\mathbf{x}_j)}{2\sigma^2} \hat{\mathbf{v}} \right\rbrace \\ & &
++ \, k \, m_j \sum_n \frac{g_n(\mathbf{x}_j)}{\sum_h g_n(\mathbf{x}_h)}
+\sum_{i=1}^{N} w_i \, g_n(\mathbf{x}_i) \, b_i^n \left\lbrace
+\mathbf{q}_i^n -\frac{\beta_n(\mathbf{x}_j)}{\sigma^2}
+\left[ \mathbf{q}_i^n \cdot (\mathbf{x}_j - \mathbf{x}_c^n )\right]
+\hat{\mathbf{v}} \right\rbrace .
+\end{aligned}
+\end{aligned}
+$$
+
+Note that for $V^\mathrm{flex}$, as defined, the slabs are fixed in
+space and so are the reference centers $\mathbf{y}_c^n$. If during the
+simulation the rotation group moves too far in $\mathbf{v}$ direction,
+it may enter a region where – due to the lack of nearby reference
+positions – no reference slab centers are defined, rendering the
+potential evaluation impossible. We therefore have included a slightly
+modified version of this potential that avoids this problem by attaching
+the midplane of slab $n=0$ to the center of mass of the rotation
+group, yielding slabs that move with the rotation group. This is
+achieved by subtracting the center of mass $\mathbf{x}_c$ of the group
+from the positions,
+
+$$
+\tilde{\mathbf{x}}_i = \mathbf{x}_i - \mathbf{x}_c \, , \mbox{\ \ \ and \ \ }
+\tilde{\mathbf{y}}_i^0 = \mathbf{y}_i^0 - \mathbf{y}_c^0 \, ,
+$$
+
+such that
+
+$$
+\begin{aligned}
+V^\mathrm{flex-t}
+& = & \frac{k}{2} \sum_n \sum_{i=1}^{N} w_i \, g_n(\tilde{\mathbf{x}}_i)
+\left[ \frac{\hat{\mathbf{v}} \times \mathbf{\Omega}(t)(\tilde{\mathbf{y}}_i^0
+- \tilde{\mathbf{y}}_c^n) }{ \| \hat{\mathbf{v}} \times
+\mathbf{\Omega}(t)(\tilde{\mathbf{y}}_i^0 -
+\tilde{\mathbf{y}}_c^n) \| }
+\cdot
+(\tilde{\mathbf{x}}_i - \tilde{\mathbf{x}}_c^n)
+\right]^2 .
+\end{aligned}
+$$
+
+To simplify the force derivation, and for efficiency reasons, we here
+assume $\mathbf{x}_c$ to be constant, and thus
+$\partial \mathbf{x}_c / \partial x =
+\partial \mathbf{x}_c / \partial y = \partial \mathbf{x}_c / \partial z = 0$.
+The resulting force error is small (of order $O(1/N)$ or $O(m_j/M)$
+if mass-weighting is applied) and can therefore be tolerated. With this
+assumption, the forces $\mathbf{F}^\mathrm{flex-t}$ have the same form
+as eqn. `%s <eqnpotflexforce>`.
+
+## Flexible Axis 2 Alternative Potential
+
+In this second variant, slab segmentation is applied to
+$V^\mathrm{rm2}$ (eqn. `%s <eqnpotrm2pf>`), resulting in a flexible
+axis potential without radial force contributions
+(`Fig. %s C <fig-equipotential>`),
+
+$$
+V{^\mathrm{flex2}}=
+\frac{k}{2} \sum_{i=1}^{N} \sum_n w_i\,g_n(\mathbf{x}_i)
+\frac{\left[ (\hat{\mathbf{v}} \times ( \mathbf{x}_i - \mathbf{x}_c^n ))
+\cdot \mathbf{\Omega}(t)(\mathbf{y}_i^0 - \mathbf{y}_c^n) \right]^2}
+{\| \hat{\mathbf{v}} \times (\mathbf{x}_i - \mathbf{x}_c^n) \|^2 +
+\epsilon'}
+$$
+
+With
+
+$$
+\begin{aligned}
+\begin{aligned}
+\mathbf{r}_i^n & := & \mathbf{\Omega}(t)(\mathbf{y}_i^0 - \mathbf{y}_c^n)\\
+\mathbf{s}_i^n & := & \frac{\hat{\mathbf{v}} \times (\mathbf{x}_i -
+\mathbf{x}_c^n ) }{ \| \hat{\mathbf{v}} \times (\mathbf{x}_i - \mathbf{x}_c^n)
+\| } \equiv \; \psi_{i} \;\; {\hat{\mathbf{v}} \times (\mathbf{x}_i-\mathbf{x}_c^n ) }\\
+\psi_i^{*}     & := & \frac{1}{ \| \hat{\mathbf{v}} \times (\mathbf{x}_i-\mathbf{x}_c^n) \|^2 + \epsilon'}\\
+W_j^n          & := & \frac{g_n(\mathbf{x}_j)\,m_j}{\sum_h g_n(\mathbf{x}_h)\,m_h}\\
+\mathbf{S}^n   & := &
+\sum_{i=1}^{N} w_i\;g_n(\mathbf{x}_i)
+\; (\mathbf{s}_i^n\cdot\mathbf{r}_i^n)
+\left[ \frac{\psi_i^*   }{\psi_i  }  \mathbf{r}_i^n
+- \frac{\psi_i^{ * 2}}{\psi_i^3} (\mathbf{s}_i^n\cdot\mathbf{r}_i^n )\;
+\mathbf{s}_i^n \right]
+\end{aligned}
+\end{aligned}
+$$
+
+the force on atom $j$ reads
+
+$$
+\begin{aligned}
+\begin{aligned}
+\nonumber
+\mathbf{F}_{\!j}{^\mathrm{flex2}}& = &
+- k\;
+\left\lbrace \sum_n w_j\;g_n(\mathbf{x}_j)\;
+(\mathbf{s}_j^n\cdot\mathbf{r}_{\!j}^n)\;
+\left[ \frac{\psi_j^*   }{\psi_j  }  \mathbf{r}_{\!j}^n
+- \frac{\psi_j^{ * 2}}{\psi_j^3} (\mathbf{s}_j^n\cdot\mathbf{r}_{\!j}^n)\;
+\mathbf{s}_{\!j}^n \right] \right\rbrace \times \hat{\mathbf{v}} \\
+\nonumber
+& &
++ k \left\lbrace \sum_n W_{\!j}^n \, \mathbf{S}^n \right\rbrace \times
+\hat{\mathbf{v}}
+- k \left\lbrace \sum_n W_{\!j}^n \; \frac{\beta_n(\mathbf{x}_j)}{\sigma^2} \frac{1}{\psi_j}\;\;
+\mathbf{s}_j^n \cdot
+\mathbf{S}^n \right\rbrace \hat{\mathbf{v}}\\
+& &
++ \frac{k}{2} \left\lbrace \sum_n w_j\;g_n(\mathbf{x}_j)
+\frac{\beta_n(\mathbf{x}_j)}{\sigma^2}
+\frac{\psi_j^*}{\psi_j^2}( \mathbf{s}_j^n \cdot \mathbf{r}_{\!j}^n )^2 \right\rbrace
+\hat{\mathbf{v}} .
+\end{aligned}
+\end{aligned}
+$$
+
+Applying transformation `%s <eqntrafo>` yields a “translation-tolerant”
+version of the flexible2 potential, $V{^\mathrm{flex2 - t}}$. Again,
+assuming that $\partial \mathbf{x}_c / \partial x$,
+$\partial \mathbf{x}_c /
+\partial y$, $\partial \mathbf{x}_c / \partial z$ are small, the
+resulting equations for $V{^\mathrm{flex2 - t}}$ and
+$\mathbf{F}{^\mathrm{flex2 - t}}$ are similar to those of
+$V^\mathrm{flex2}$ and $\mathbf{F}^\mathrm{flex2}$.
+
+### Usage
+
+To apply enforced rotation, the particles $i$ that are to be subjected
+to one of the rotation potentials are defined via index groups
+`rot-group0`, `rot-group1`, etc., in the `mdp` input file. The reference
+positions $\mathbf{y}_i^0$ are read from a special `trr` file provided
+to `grompp `. If no such file is found,
+$\mathbf{x}_i(t=0)$ are used as reference positions and written to
+`trr` such that they can be used for subsequent setups. All parameters
+of the potentials such as $k$, $\epsilon'$, etc.
+(`Table %s <tab-vars>`) are provided as `mdp` parameters; `rot-type`
+selects the type of the potential. The option `rot-massw` allows to
+choose whether or not to use mass-weighted averaging. For the flexible
+potentials, a cutoff value $g_n^\mathrm{min}$ (typically
+$g_n^\mathrm{min}=0.001$) makes sure that only significant
+contributions to $V$ and $\mathbf{F}$ are evaluated, *i.e.* terms
+with $g_n(\mathbf{x}) < g_n^\mathrm{min}$ are omitted.
+`Table %s <tab-quantities>` summarizes observables that are written to
+additional output files and which are described below.
+
+| parameter |  |  | $k$ | $\hat{\mathbf{v}}$ | $\mathbf{u}$ | $\omega$ | ${\epsilon}'$ | ${\Delta}x$ | $g_n^\mathrm{min}$ |
+|----|----|----|----|----|----|----|----|----|----|
+| `mdp` input variable name |  |  | k | vec | pivot | rate | eps | slab-dist | min-gauss |
+| unit |  |  | $\frac{\mathrm{kJ}}{\mathrm{mol} \cdot \mathrm{nm}^2}$ | `-` | nm | $^\circ$/ps | nm$^2$ | nm | `-` |
+| fixed axis potentials: |  | eqn. |  |  |  |  |  |  |  |
+| isotropic | V$^\mathrm{iso}$ | `eqnpotiso` | **x** | **x** | **x** | **x** | `-` | `-` | `-` |
+| --- pivot-free | V$^\mathrm{iso-pf}$ | `eqnpotisopf` | **x** | **x** | `-` | **x** | `-` | `-` | `-` |
+| parallel motion | V$^\mathrm{pm}$ | `eqnpotpm` | **x** | **x** | **x** | **x** | `-` | `-` | `-` |
+| --- pivot-free | V$^\mathrm{pm-pf}$ | `eqnpotpmpf` | **x** | **x** | `-` | **x** | `-` | `-` | `-` |
+| radial motion | V$^\mathrm{rm}$ | `eqnpotrm` | **x** | **x** | **x** | **x** | `-` | `-` | `-` |
+| --- pivot-free | V$^\mathrm{rm-pf}$ | `eqnpotrmpf` | **x** | **x** | `-` | **x** | `-` | `-` | `-` |
+| radial motion 2 | V$^\mathrm{rm2}$ | `eqnpotrm2` | **x** | **x** | **x** | **x** | **x** | `-` | `-` |
+| --- pivot-free | V$^\mathrm{rm2-pf}$ | `eqnpotrm2pf` | **x** | **x** | `-` | **x** | **x** | `-` | `-` |
+| flexible axis potentials: |  | eqn. |  |  |  |  |  |  |  |
+| flexible | V$^\mathrm{flex}$ | `eqnpotflex` | **x** | **x** | `-` | **x** | `-` | **x** | **x** |
+| --- transl. tol | V$^\mathrm{flex-t}$ | `eqnpotflext` | **x** | **x** | `-` | **x** | `-` | **x** | **x** |
+| flexible 2 | V$^\mathrm{flex2}$ | `eqnpotflex2` | **x** | **x** | `-` | **x** | **x** | **x** | **x** |
+| --- transl. tol | V$^\mathrm{flex2-t}$ | `-` | **x** | **x** | `-` | **x** | **x** | **x** | **x** |
+
+Parameters used by the various rotation potentials. **x** indicate which
+parameter is actually used for a given potential
+
+| quantity | unit | equation | output file | fixed | flexible |
+|----|----|----|----|----|----|
+| $V(t)$ | kJ/mol | `see Table %s <tab-vars>` | `rotation` | **x** | **x** |
+| $\theta_{\mathrm{ref}}(t)$ | degrees | $\theta_{\mathrm{ref}}(t)=\omega t$ | `rotation` | **x** | **x** |
+| $\theta_{\mathrm{av}}(t)$ | degrees | `eqnavangle` | `rotation` | **x** | `-` |
+| $\theta_{\mathrm{fit}}(t)$, $\theta_{\mathrm{fit}}(t,n)$ | degrees | `eqnrmsdfit` | `rotangles` | `-` | **x** |
+| $\mathbf{y}_{0}(n)$, $\mathbf{x}_{0}(t,n)$ | nm | `eqndefx0`,`eqndefy0` | `rotslabs` | `-` | **x** |
+| $\tau(t)$ | kJ/mol | `eqntorque` | `rotation` | **x** | `-` |
+| $\tau(t,n)$ | kJ/mol | `eqntorque` | `rottorque` | `-` | **x** |
+
+Quantities recorded in output files during enforced rotation
+simulations. All slab-wise data is written every `nstsout` steps, other
+rotation data every `nstrout` steps.
+
+## Angle of Rotation Groups: Fixed Axis
+
+For fixed axis rotation, the average angle $\theta_\mathrm{av}(t)$ of
+the group relative to the reference group is determined via the
+distance-weighted angular deviation of all rotation group atoms from
+their reference positions,
+
+$$
+\theta_\mathrm{av} = \left. \sum_{i=1}^{N} r_i \ \theta_i \right/ \sum_{i=1}^N r_i \ .
+$$
+
+Here, $r_i$ is the distance of the reference position to the rotation
+axis, and the difference angles $\theta_i$ are determined from the
+atomic positions, projected onto a plane perpendicular to the rotation
+axis through pivot point $\mathbf{u}$ (see eqn. `%s <eqnproject>` for
+the definition of $\perp$),
+
+$$
+\cos \theta_i =
+\frac{(\mathbf{y}_i-\mathbf{u})^\perp \cdot (\mathbf{x}_i-\mathbf{u})^\perp}
+{ \| (\mathbf{y}_i-\mathbf{u})^\perp \cdot (\mathbf{x}_i-\mathbf{u})^\perp
+\| } \ .
+$$
+
+The sign of $\theta_\mathrm{av}$ is chosen such that
+$\theta_\mathrm{av} > 0$ if the actual structure rotates ahead of the
+reference.
+
+## Angle of Rotation Groups: Flexible Axis
+
+For flexible axis rotation, two outputs are provided, the angle of the
+entire rotation group, and separate angles for the segments in the
+slabs. The angle of the entire rotation group is determined by an RMSD
+fit of $\mathbf{x}_i$ to the reference positions $\mathbf{y}_i^0$ at
+$t=0$, yielding $\theta_\mathrm{fit}$ as the angle by which the
+reference has to be rotated around $\hat{\mathbf{v}}$ for the optimal
+fit,
+
+$$
+\mathrm{RMSD} \big( \mathbf{x}_i,\ \mathbf{\Omega}(\theta_\mathrm{fit})
+\mathbf{y}_i^0 \big) \stackrel{!}{=} \mathrm{min} \, .
+$$
+
+To determine the local angle for each slab $n$, both reference and
+actual positions are weighted with the Gaussian function of slab $n$,
+and $\theta_\mathrm{fit}(t,n)$ is calculated as in eqn.
+`%s <eqnrmsdfit>` from the Gaussian-weighted positions.
+
+For all angles, the `mdp` input option `rot-fit-method` controls whether
+a normal RMSD fit is performed or whether for the fit each position
+$\mathbf{x}_i$ is put at the same distance to the rotation axis as its
+reference counterpart $\mathbf{y}_i^0$. In the latter case, the RMSD
+measures only angular differences, not radial ones.
+
+## Angle Determination by Searching the Energy Minimum
+
+Alternatively, for `rot-fit-method = potential`, the angle of the
+rotation group is determined as the angle for which the rotation
+potential energy is minimal. Therefore, the used rotation potential is
+additionally evaluated for a set of angles around the current reference
+angle. In this case, the `rotangles.log` output file contains the values
+of the rotation potential at the chosen set of angles, while
+`rotation.xvg` lists the angle with minimal potential energy.
+
+## Torque
+
+The torque $\mathbf{\tau}(t)$ exerted by the rotation potential is
+calculated for fixed axis rotation via
+
+$$
+\mathbf{\tau}(t) = \sum_{i=1}^{N} \mathbf{r}_i(t) \times \mathbf{f}_{\!i}^\perp(t) ,
+$$
+
+where $\mathbf{r}_i(t)$ is the distance vector from the rotation axis
+to $\mathbf{x}_i(t)$ and $\mathbf{f}_{\!i}^\perp(t)$ is the force
+component perpendicular to $\mathbf{r}_i(t)$ and $\hat{\mathbf{v}}$.
+For flexible axis rotation, torques $\mathbf{\tau}_{\!n}$ are
+calculated for each slab using the local rotation axis of the slab and
+the Gaussian-weighted positions.
